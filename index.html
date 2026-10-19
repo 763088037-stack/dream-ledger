@@ -267,16 +267,16 @@
 
   <div class="assets">
     <div class="asset">
-      <label for="cash">身上携带</label>
-      <input id="cash" type="number" min="0" step="1" placeholder="0">
+      <label for="cash">身上携带（万）</label>
+      <input id="cash" type="number" min="0" step="0.1" placeholder="0">
     </div>
     <div class="asset">
-      <label for="bank">钱庄存款</label>
-      <input id="bank" type="number" min="0" step="1" placeholder="0">
+      <label for="bank">钱庄存款（万）</label>
+      <input id="bank" type="number" min="0" step="0.1" placeholder="0">
     </div>
     <div class="asset">
-      <label for="reserve">储备金</label>
-      <input id="reserve" type="number" min="0" step="1" placeholder="0">
+      <label for="reserve">储备金（万）</label>
+      <input id="reserve" type="number" min="0" step="0.1" placeholder="0">
     </div>
     <div class="asset total">
       <label>可流通合计</label>
@@ -285,7 +285,7 @@
     </div>
   </div>
   <p class="asset-note">
-    储备金不能交易、不能转让，只能自己消耗，所以不计入合计。单位：梦幻币。
+    单位统一为万梦幻币。储备金不能交易、不能转让，只能自己消耗，所以不计入合计。
   </p>
 
   <div class="warn" id="warn">
@@ -512,6 +512,7 @@
     var fresh = {
       cash: 0, bank: 0, reserve: 0,
       day: todayKey(),
+      unit: 'wan',
       opening: { cash: 0, bank: 0 }
     };
 
@@ -520,12 +521,24 @@
       if (!raw) return fresh;
 
       var a = JSON.parse(raw);
+
+      // 早期版本按「梦幻币」存，旧数据要除一万换成万
+      var scale = a.unit === 'wan' ? 1 : 0.0001;
+
+      function toWan(v) {
+        return Math.round((Number(v) || 0) * scale * 100) / 100;
+      }
+
       var cur = {
-        cash: Number(a.cash) || 0,
-        bank: Number(a.bank) || 0,
-        reserve: Number(a.reserve) || 0,
+        cash: toWan(a.cash),
+        bank: toWan(a.bank),
+        reserve: toWan(a.reserve),
         day: a.day || todayKey(),
-        opening: a.opening || null
+        unit: 'wan',
+        opening: a.opening ? {
+          cash: toWan(a.opening.cash),
+          bank: toWan(a.opening.bank)
+        } : null
       };
 
       if (cur.day !== todayKey()) {
@@ -550,15 +563,13 @@
     }
   }
 
-  function fmtMoney(n) {
-    if (n >= 100000000) return (n / 100000000).toFixed(2) + ' 亿';
-    if (n >= 10000) return (n / 10000).toFixed(1) + ' 万';
-    return Math.round(n).toLocaleString('zh-CN');
-  }
-
   function fmtWan(w) {
-    if (Math.abs(w) >= 10000) return (w / 10000).toFixed(2) + ' 亿';
-    return w.toFixed(1) + ' 万';
+    var n = Number(w) || 0;
+    if (Math.abs(n) >= 10000) return (n / 10000).toFixed(2) + ' 亿';
+    return n.toLocaleString('zh-CN', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }) + ' 万';
   }
 
   function fillAssetInputs() {
@@ -570,7 +581,7 @@
 
   function renderAssets(s) {
     var total = assets.cash + assets.bank;
-    document.getElementById('assetTotal').textContent = fmtMoney(total);
+    document.getElementById('assetTotal').textContent = fmtWan(total);
 
     var base = assets.opening || { cash: 0, bank: 0 };
     var diff = total - ((base.cash || 0) + (base.bank || 0));
@@ -581,11 +592,11 @@
       deltaEl.textContent = '今日无变化';
     } else {
       deltaEl.className = 'delta ' + (diff > 0 ? 'up' : 'down');
-      deltaEl.textContent = '今日 ' + (diff > 0 ? '+' : '−') + fmtMoney(Math.abs(diff));
+      deltaEl.textContent = '今日 ' + (diff > 0 ? '+' : '−') + fmtWan(Math.abs(diff));
     }
 
     var box = document.getElementById('recon');
-    var diffWan = diff / 10000;
+    var diffWan = diff;
 
     if (records.length === 0 || total === 0) {
       box.className = 'recon';
