@@ -7,14 +7,33 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: #F6F5F2;
+    background-color: #F3F4EF;
+    /* 青玉 → 宣纸 的渐变，加两团极淡的光晕，像水彩晕开 */
+    background-image:
+      radial-gradient(680px 480px at 6% -6%,  rgba(159, 225, 203, .45), transparent 70%),
+      radial-gradient(620px 420px at 102% 2%, rgba(133, 183, 235, .30), transparent 70%),
+      radial-gradient(900px 640px at 50% 112%, rgba(238, 222, 189, .55), transparent 72%),
+      linear-gradient(172deg, #EEF4F1 0%, #F7F5EF 46%, #F2EFE7 100%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     color: #2C2C2A;
     font-family: system-ui, -apple-system, "Microsoft YaHei", sans-serif;
     font-size: 14px;
     line-height: 1.6;
     padding: 48px 20px;
+    min-height: 100vh;
   }
-  .wrap { max-width: 760px; margin: 0 auto; }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 8px 0 4px;
+  }
+
+  /* 背景有了层次，卡片也要跟着浮起来一点，否则会糊在一起 */
+  table, .stat, .asset {
+    box-shadow: 0 1px 1px rgba(44, 44, 42, .03), 0 12px 28px -22px rgba(44, 44, 42, .45);
+  }
 
   h1 { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; }
   .date { color: #918E87; font-size: 13px; margin-top: 4px; }
