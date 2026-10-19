@@ -7,14 +7,14 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background-color: #F3F4EF;
-    /* 青玉 → 宣纸 的渐变，加两团极淡的光晕，像水彩晕开 */
+    background-color: #F7F5EF;
+    /* 宣纸：暖白打底 + 纸纤维颗粒，不加任何插画 */
     background-image:
-      radial-gradient(680px 480px at 6% -6%,  rgba(159, 225, 203, .45), transparent 70%),
-      radial-gradient(620px 420px at 102% 2%, rgba(133, 183, 235, .30), transparent 70%),
-      radial-gradient(900px 640px at 50% 112%, rgba(238, 222, 189, .55), transparent 72%),
-      linear-gradient(172deg, #EEF4F1 0%, #F7F5EF 46%, #F2EFE7 100%);
-    background-repeat: no-repeat;
+      url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
+      radial-gradient(760px 420px at 50% -6%, #FFFDF6 0%, rgba(255, 253, 246, 0) 72%),
+      radial-gradient(700px 500px at 100% 100%, rgba(196, 174, 133, .10), transparent 70%),
+      linear-gradient(180deg, #F8F6F0 0%, #F5F2E9 58%, #F1EEE3 100%);
+    background-repeat: repeat, no-repeat, no-repeat, no-repeat;
     background-attachment: fixed;
     color: #2C2C2A;
     font-family: system-ui, -apple-system, "Microsoft YaHei", sans-serif;
