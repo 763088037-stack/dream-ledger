@@ -21,7 +21,7 @@
 
   .entry {
     display: grid;
-    grid-template-columns: 1.2fr 1fr 0.8fr 0.8fr 0.8fr auto;
+    grid-template-columns: 1.1fr 0.85fr 0.68fr 0.8fr 0.8fr 0.8fr auto;
     gap: 8px;
     margin-top: 24px;
   }
@@ -218,21 +218,24 @@
   .asset .delta.up { color: #0F6E56; }
   .asset .delta.down { color: #A32D2D; }
 
-  .asset-note { margin-top: 8px; font-size: 12px; color: #B4B2A9; line-height: 1.6; }
-
-  .recon {
-    display: none;
-    margin-top: 14px;
-    padding: 10px 14px;
-    font-size: 12.5px;
-    line-height: 1.6;
-    color: #5F5E5A;
-    background: #FAF9F7;
-    border: 1px solid #E5E2DC;
-    border-radius: 10px;
+  .asset .openline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #918E87;
   }
-  .recon.show { display: block; }
-  .recon b { font-weight: 500; color: #2C2C2A; }
+  .asset .openline input {
+    width: 58px;
+    padding: 1px 0 2px;
+    font-size: 12px;
+    font-weight: 400;
+    text-align: right;
+  }
+  .asset .openline.muted { color: #B4B2A9; }
+
+  .asset-note { margin-top: 8px; font-size: 12px; color: #B4B2A9; line-height: 1.6; }
 
   .note { margin-top: 24px; font-size: 12px; color: #918E87; line-height: 1.7; }
 
@@ -267,25 +270,28 @@
 
   <div class="assets">
     <div class="asset">
-      <label for="cash">身上携带（万）</label>
-      <input id="cash" type="number" min="0" step="0.1" placeholder="0">
+      <label>身上 · 当前</label>
+      <div class="amount" id="cashNow">0.0 万</div>
+      <div class="openline">期初 <input id="openCash" type="number" min="0" step="0.1" placeholder="0"> 万</div>
     </div>
     <div class="asset">
-      <label for="bank">钱庄存款（万）</label>
-      <input id="bank" type="number" min="0" step="0.1" placeholder="0">
+      <label>钱庄 · 当前</label>
+      <div class="amount" id="bankNow">0.0 万</div>
+      <div class="openline">期初 <input id="openBank" type="number" min="0" step="0.1" placeholder="0"> 万</div>
     </div>
     <div class="asset">
-      <label for="reserve">储备金（万）</label>
+      <label for="reserve">储备金</label>
       <input id="reserve" type="number" min="0" step="0.1" placeholder="0">
+      <div class="openline muted">不参与流水</div>
     </div>
     <div class="asset total">
       <label>可流通合计</label>
-      <div class="amount" id="assetTotal">0</div>
-      <div class="delta" id="assetDelta"></div>
+      <div class="amount" id="assetTotal">0.0 万</div>
+      <div class="delta" id="assetDelta">累计 +0.0 万</div>
     </div>
   </div>
   <p class="asset-note">
-    单位统一为万梦幻币。储备金不能交易、不能转让，只能自己消耗，所以不计入合计。
+    身上和钱庄跟着流水自动结算：收入进账，消耗品和点卡出账。期初是你开始记账那一刻的余额，之后就不用再动它。
   </p>
 
   <div class="warn" id="warn">
@@ -295,6 +301,10 @@
   <form class="entry" id="form">
     <input name="name" type="text" placeholder="角色名" required maxlength="12" autocomplete="off">
     <select name="sect" id="sect" required></select>
+    <select name="acct" id="acct">
+      <option value="cash">身上</option>
+      <option value="bank">钱庄</option>
+    </select>
     <input name="income" type="number" placeholder="收入(万)" step="0.1" min="0" required>
     <input name="expense" type="number" placeholder="支出(万)" step="0.1" min="0">
     <input name="minutes" type="number" placeholder="耗时(分)" step="1" min="0" required>
@@ -308,6 +318,7 @@
         <tr>
           <th>角色</th>
           <th>门派</th>
+          <th>账户</th>
           <th>今日任务</th>
           <th class="num">收入(万)</th>
           <th class="num">支出(万)</th>
@@ -348,8 +359,6 @@
     </div>
   </div>
 
-  <div class="recon" id="recon"></div>
-
   <p class="note">
     支出 = 你手填的消耗品 + 耗时折算的点卡。净收益 = 收入 − 支出。<br>
     数据存在这台电脑的浏览器里，换电脑或清浏览器数据就会丢。
@@ -362,11 +371,11 @@
   var ASSET_KEY = 'dream-ledger-assets';
 
   var DEFAULT_RECORDS = [
-    { id: 'a1', name: '剑走偏锋',   sect: '大唐官府', task: '师门 + 捉鬼', income: 28, expense: 3,   minutes: 150 },
-    { id: 'a2', name: '一念花开',   sect: '化生寺',   task: '师门 + 宝图', income: 22, expense: 2,   minutes: 120 },
-    { id: 'a3', name: '清风不识字', sect: '方寸山',   task: '师门',        income: 12, expense: 1,   minutes: 60  },
-    { id: 'a4', name: '海阔天空',   sect: '龙宫',     task: '捉鬼',        income: 18, expense: 2.5, minutes: 90  },
-    { id: 'a5', name: '魔王在此',   sect: '魔王寨',   task: '师门',        income: 8,  expense: 0.5, minutes: 45  }
+    { id: 'a1', name: '剑走偏锋',   sect: '大唐官府', task: '师门 + 捉鬼', acct: 'cash', income: 28, expense: 3,   minutes: 150 },
+    { id: 'a2', name: '一念花开',   sect: '化生寺',   task: '师门 + 宝图', acct: 'cash', income: 22, expense: 2,   minutes: 120 },
+    { id: 'a3', name: '清风不识字', sect: '方寸山',   task: '师门',        acct: 'bank', income: 12, expense: 1,   minutes: 60  },
+    { id: 'a4', name: '海阔天空',   sect: '龙宫',     task: '捉鬼',        acct: 'cash', income: 18, expense: 2.5, minutes: 90  },
+    { id: 'a5', name: '魔王在此',   sect: '魔王寨',   task: '师门',        acct: 'cash', income: 8,  expense: 0.5, minutes: 45  }
   ];
 
   var SECTS = {
@@ -428,6 +437,7 @@
       name: r.name || '',
       sect: r.sect || '',
       task: r.task || '',
+      acct: r.acct === 'bank' ? 'bank' : 'cash',
       income: Number(r.income) || 0,
       expense: Number(r.expense) || 0,
       minutes: Number(r.minutes) || 0
@@ -503,18 +513,8 @@
     };
   }
 
-  function todayKey() {
-    var d = new Date();
-    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
-  }
-
   function loadAssets() {
-    var fresh = {
-      cash: 0, bank: 0, reserve: 0,
-      day: todayKey(),
-      unit: 'wan',
-      opening: { cash: 0, bank: 0 }
-    };
+    var fresh = { openCash: 0, openBank: 0, reserve: 0, unit: 'wan' };
 
     try {
       var raw = localStorage.getItem(ASSET_KEY);
@@ -529,26 +529,18 @@
         return Math.round((Number(v) || 0) * scale * 100) / 100;
       }
 
-      var cur = {
-        cash: toWan(a.cash),
-        bank: toWan(a.bank),
-        reserve: toWan(a.reserve),
-        day: a.day || todayKey(),
-        unit: 'wan',
-        opening: a.opening ? {
-          cash: toWan(a.opening.cash),
-          bank: toWan(a.opening.bank)
-        } : null
-      };
+      var openCash = a.openCash !== undefined ? toWan(a.openCash)
+        : a.opening ? toWan(a.opening.cash) : toWan(a.cash);
 
-      if (cur.day !== todayKey()) {
-        cur.day = todayKey();
-        cur.opening = { cash: cur.cash, bank: cur.bank };
-      }
-      if (!cur.opening) {
-        cur.opening = { cash: cur.cash, bank: cur.bank };
-      }
-      return cur;
+      var openBank = a.openBank !== undefined ? toWan(a.openBank)
+        : a.opening ? toWan(a.opening.bank) : toWan(a.bank);
+
+      return {
+        openCash: openCash,
+        openBank: openBank,
+        reserve: toWan(a.reserve),
+        unit: 'wan'
+      };
     } catch (err) {
       console.warn('读取资产失败', err);
       return fresh;
@@ -573,48 +565,49 @@
   }
 
   function fillAssetInputs() {
-    ['cash', 'bank', 'reserve'].forEach(function (id) {
-      var el = document.getElementById(id);
-      el.value = assets[id] ? assets[id] : '';
-    });
+    document.getElementById('openCash').value = assets.openCash ? assets.openCash : '';
+    document.getElementById('openBank').value = assets.openBank ? assets.openBank : '';
+    document.getElementById('reserve').value = assets.reserve ? assets.reserve : '';
   }
 
-  function renderAssets(s) {
-    var total = assets.cash + assets.bank;
+  // 余额 = 期初 + 该账户所有流水的净额
+  function balances() {
+    var rate = getRate();
+    var cash = assets.openCash;
+    var bank = assets.openBank;
+    var card = 0;
+
+    records.forEach(function (r) {
+      var c = Number(r.minutes) / 60 * rate;
+      var delta = Number(r.income) - Number(r.expense) - c;
+
+      if (r.acct === 'bank') bank += delta;
+      else cash += delta;
+
+      card += c;
+    });
+
+    return { cash: cash, bank: bank, card: card };
+  }
+
+  function renderAssets() {
+    var b = balances();
+    var total = b.cash + b.bank;
+    var open = assets.openCash + assets.openBank;
+
+    document.getElementById('cashNow').textContent = fmtWan(b.cash);
+    document.getElementById('bankNow').textContent = fmtWan(b.bank);
     document.getElementById('assetTotal').textContent = fmtWan(total);
 
-    var base = assets.opening || { cash: 0, bank: 0 };
-    var diff = total - ((base.cash || 0) + (base.bank || 0));
+    var diff = total - open;
     var deltaEl = document.getElementById('assetDelta');
 
-    if (diff === 0) {
+    if (Math.abs(diff) < 0.05) {
       deltaEl.className = 'delta';
-      deltaEl.textContent = '今日无变化';
+      deltaEl.textContent = '累计无变化';
     } else {
       deltaEl.className = 'delta ' + (diff > 0 ? 'up' : 'down');
-      deltaEl.textContent = '今日 ' + (diff > 0 ? '+' : '−') + fmtWan(Math.abs(diff));
-    }
-
-    var box = document.getElementById('recon');
-    var diffWan = diff;
-
-    if (records.length === 0 || total === 0) {
-      box.className = 'recon';
-      box.innerHTML = '';
-      return;
-    }
-
-    var gap = diffWan - s.net;
-    box.className = 'recon show';
-
-    if (Math.abs(gap) < 1) {
-      box.innerHTML = '对上了：资产变化 <b>' + fmtWan(diffWan) +
-        '</b>，和今日流水净额一致。';
-    } else {
-      box.innerHTML = '对不上：资产变化 <b>' + fmtWan(diffWan) +
-        '</b>，流水净额 <b>' + fmtWan(s.net) +
-        '</b>，差 <b>' + fmtWan(gap) +
-        '</b>。要么有笔收支没记，要么钱花在了别处（买装备、转给小号）。';
+      deltaEl.textContent = '累计 ' + (diff > 0 ? '+' : '−') + fmtWan(Math.abs(diff));
     }
   }
 
@@ -622,7 +615,7 @@
     var rate = getRate();
 
     if (records.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty">还没有记录，在上面添加一条</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="empty">还没有记录，在上面添加一条</td></tr>';
     } else {
       tbody.innerHTML = records.map(function (r) {
         var card = Number(r.minutes) / 60 * rate;
@@ -632,6 +625,7 @@
         return '<tr>' +
           '<td>' + esc(r.name) + '</td>' +
           '<td>' + esc(r.sect) + '</td>' +
+          '<td>' + (r.acct === 'bank' ? '钱庄' : '身上') + '</td>' +
           '<td>' + esc(r.task) + '</td>' +
           '<td class="num">' + Number(r.income).toFixed(1) + '</td>' +
           '<td class="num" title="消耗品 ' + Number(r.expense).toFixed(1) + ' + 点卡 ' + card.toFixed(1) + '">' +
@@ -661,7 +655,7 @@
     document.getElementById('perHour').innerHTML =
       (s.hours > 0 ? s.net / s.hours : 0).toFixed(1) + '<span>万 / 小时</span>';
 
-    renderAssets(s);
+    renderAssets();
   }
 
   function addRecord() {
@@ -669,6 +663,7 @@
     var name = String(data.get('name') || '').trim();
     var sect = String(data.get('sect') || '').trim();
     var task = getSelectedTasks();
+    var acct = data.get('acct') === 'bank' ? 'bank' : 'cash';
     var income = Number(data.get('income'));
     var expense = Number(data.get('expense'));
     var minutes = Number(data.get('minutes'));
@@ -681,6 +676,7 @@
       name: name,
       sect: sect,
       task: task,
+      acct: acct,
       income: income,
       expense: expense,
       minutes: minutes
@@ -727,11 +723,11 @@
     render();
   });
 
-  ['cash', 'bank', 'reserve'].forEach(function (id) {
+  ['openCash', 'openBank', 'reserve'].forEach(function (id) {
     document.getElementById(id).addEventListener('input', function () {
       assets[id] = Number(this.value) || 0;
       saveAssets();
-      renderAssets(stats());
+      renderAssets();
     });
   });
 
