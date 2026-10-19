@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>梦幻收益管家 v0.1</title>
+<title>梦幻收益管家 v0.2</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -14,21 +14,93 @@
     line-height: 1.6;
     padding: 48px 20px;
   }
-  .wrap { max-width: 720px; margin: 0 auto; }
+  .wrap { max-width: 760px; margin: 0 auto; }
 
   h1 { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; }
   .date { color: #918E87; font-size: 13px; margin-top: 4px; }
 
+  .entry {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 0.8fr 0.8fr auto;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .task-picker {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .chip {
+    padding: 6px 13px;
+    font: inherit;
+    font-size: 12.5px;
+    color: #5F5E5A;
+    background: #fff;
+    border: 1px solid #E5E2DC;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: .15s;
+  }
+  .chip:hover { border-color: #85B7EB; color: #185FA5; }
+  .chip.on {
+    color: #0C447C;
+    background: #E6F1FB;
+    border-color: #85B7EB;
+    font-weight: 500;
+  }
+  .entry input,
+  .entry select {
+    width: 100%;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 13px;
+    color: #2C2C2A;
+    background-color: #fff;
+    border: 1px solid #E5E2DC;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .entry select {
+    padding-right: 30px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23918E87' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  .entry select:invalid { color: #B4B2A9; }
+  .entry input:focus,
+  .entry select:focus { border-color: #185FA5; }
+  .entry input::placeholder { color: #B4B2A9; }
+  .entry button {
+    padding: 9px 20px;
+    font: inherit;
+    font-size: 13px;
+    color: #fff;
+    background: #185FA5;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .entry button:hover { background: #0C447C; }
+
   table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 28px;
+    margin-top: 20px;
     background: #fff;
     border: 1px solid #E5E2DC;
     border-radius: 12px;
     overflow: hidden;
   }
-  th, td { padding: 12px 16px; text-align: left; }
+  th, td { padding: 11px 14px; text-align: left; }
   th {
     font-size: 12px;
     font-weight: 500;
@@ -36,53 +108,82 @@
     background: #FAF9F7;
     border-bottom: 1px solid #E5E2DC;
   }
-  td { border-bottom: 1px solid #EFEDE8; }
+  td { border-bottom: 1px solid #EFEDE8; font-size: 13.5px; }
   tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
 
-  .num {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
+  .del {
+    width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #B4B2A9;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    transition: .15s;
   }
+  .del:hover { color: #A32D2D; background: #FCEBEB; }
 
-  .summary {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
-    flex-wrap: wrap;
-  }
+  .empty { text-align: center; color: #B4B2A9; padding: 32px 0; font-size: 13px; }
+
+  .summary { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
   .stat {
-    flex: 1;
-    min-width: 150px;
+    flex: 1; min-width: 150px;
     background: #fff;
     border: 1px solid #E5E2DC;
     border-radius: 12px;
     padding: 16px 18px;
   }
   .stat .label { font-size: 12px; color: #918E87; }
-  .stat .value {
-    font-size: 26px;
-    font-weight: 500;
-    letter-spacing: -0.02em;
-    margin-top: 2px;
-  }
+  .stat .value { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; margin-top: 2px; }
   .stat .value span { font-size: 13px; color: #5F5E5A; margin-left: 3px; }
   .stat.highlight { background: #E1F5EE; border-color: #9FE1CB; }
   .stat.highlight .label { color: #0F6E56; }
   .stat.highlight .value { color: #085041; }
   .stat.highlight .value span { color: #0F6E56; }
 
-  .note {
-    margin-top: 24px;
-    font-size: 12px;
-    color: #918E87;
-    line-height: 1.7;
+  .note { margin-top: 24px; font-size: 12px; color: #918E87; line-height: 1.7; }
+
+  .warn {
+    display: none;
+    margin-top: 16px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: #854F0B;
+    background: #FAEEDA;
+    border-radius: 8px;
+    line-height: 1.6;
+  }
+  .warn.show { display: block; }
+
+  @media (max-width: 640px) {
+    body { padding: 32px 16px; }
+    .entry { grid-template-columns: 1fr 1fr; }
+    .entry button { grid-column: span 2; }
+    table { font-size: 12.5px; }
+    th, td { padding: 9px 10px; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>梦幻收益管家</h1>
-  <p class="date">2026-10-19 · 今日五开记录</p>
+  <p class="date" id="today"></p>
+
+  <div class="warn" id="warn">
+    这个环境不允许保存数据，刷新后记录会丢。请用 Chrome 或 Edge 直接打开这个文件。
+  </div>
+
+  <form class="entry" id="form">
+    <input name="name" type="text" placeholder="角色名" required maxlength="12" autocomplete="off">
+    <select name="sect" id="sect" required></select>
+    <input name="income" type="number" placeholder="收入(万)" step="0.1" min="0" required>
+    <input name="minutes" type="number" placeholder="耗时(分)" step="1" min="0" required>
+    <button type="submit" id="addBtn">添加</button>
+    <div class="task-picker" id="taskPicker"></div>
+  </form>
 
   <table>
     <thead>
@@ -90,68 +191,213 @@
         <th>角色</th>
         <th>门派</th>
         <th>今日任务</th>
-        <th class="num">收入（万）</th>
-        <th class="num">耗时（分）</th>
+        <th class="num">收入(万)</th>
+        <th class="num">耗时(分)</th>
+        <th></th>
       </tr>
     </thead>
-    <tbody>
-      <tr>
-        <td>剑走偏锋</td>
-        <td>大唐官府</td>
-        <td>师门 + 捉鬼</td>
-        <td class="num">28</td>
-        <td class="num">150</td>
-      </tr>
-      <tr>
-        <td>一念花开</td>
-        <td>化生寺</td>
-        <td>师门 + 宝图</td>
-        <td class="num">22</td>
-        <td class="num">120</td>
-      </tr>
-      <tr>
-        <td>清风不识字</td>
-        <td>方寸山</td>
-        <td>师门</td>
-        <td class="num">12</td>
-        <td class="num">60</td>
-      </tr>
-      <tr>
-        <td>海阔天空</td>
-        <td>龙宫</td>
-        <td>捉鬼</td>
-        <td class="num">18</td>
-        <td class="num">90</td>
-      </tr>
-      <tr>
-        <td>魔王在此</td>
-        <td>魔王寨</td>
-        <td>师门</td>
-        <td class="num">8</td>
-        <td class="num">45</td>
-      </tr>
-    </tbody>
+    <tbody id="tbody"></tbody>
   </table>
 
   <div class="summary">
     <div class="stat">
       <div class="label">今日总收入</div>
-      <div class="value">88<span>万梦幻币</span></div>
+      <div class="value" id="sumIncome">0<span>万梦幻币</span></div>
     </div>
     <div class="stat">
       <div class="label">总耗时</div>
-      <div class="value">7.75<span>小时</span></div>
+      <div class="value" id="sumHours">0<span>小时</span></div>
     </div>
     <div class="stat highlight">
       <div class="label">每小时收益</div>
-      <div class="value">11.4<span>万 / 小时</span></div>
+      <div class="value" id="perHour">0<span>万 / 小时</span></div>
     </div>
   </div>
 
   <p class="note">
-    v0.1：所有数字都是手写的，合计和时薪也是手算的。<br>
-    下一步要做的，是让它自己算出来。
+    数据存在你这台电脑的浏览器里，换电脑或清除浏览器数据就会丢。<br>
+    v0.3 会把它搬到服务器上。
   </p>
 </div>
+
+<script>
+  var STORAGE_KEY = 'dream-ledger-records';
+
+  var DEFAULT_RECORDS = [
+    { id: 'a1', name: '剑走偏锋',   sect: '大唐官府', task: '师门 + 捉鬼', income: 28, minutes: 150 },
+    { id: 'a2', name: '一念花开',   sect: '化生寺',   task: '师门 + 宝图', income: 22, minutes: 120 },
+    { id: 'a3', name: '清风不识字', sect: '方寸山',   task: '师门',        income: 12, minutes: 60  },
+    { id: 'a4', name: '海阔天空',   sect: '龙宫',     task: '捉鬼',        income: 18, minutes: 90  },
+    { id: 'a5', name: '魔王在此',   sect: '魔王寨',   task: '师门',        income: 8,  minutes: 45  }
+  ];
+
+  var SECTS = {
+    '人族': ['大唐官府', '女儿村', '化生寺', '神木林', '天机城', '花果山'],
+    '魔族': ['魔王寨', '阴曹地府', '盘丝洞', '狮驼岭', '凌波城', '无底洞'],
+    '仙族': ['龙宫', '普陀山', '五庄观', '天宫', '方寸山']
+  };
+
+  var TASKS = ['师门', '捉鬼', '封妖', '宝图', '押镖', '副本', '帮派', '跑环'];
+
+  var form  = document.getElementById('form');
+  var tbody = document.getElementById('tbody');
+  var records = load();
+
+  function buildSects() {
+    var select = document.getElementById('sect');
+    var html = '<option value="">选择门派</option>';
+
+    Object.keys(SECTS).forEach(function (race) {
+      html += '<optgroup label="' + race + '">';
+      SECTS[race].forEach(function (name) {
+        html += '<option value="' + name + '">' + name + '</option>';
+      });
+      html += '</optgroup>';
+    });
+
+    select.innerHTML = html;
+  }
+
+  function buildTasks() {
+    var picker = document.getElementById('taskPicker');
+    picker.innerHTML = TASKS.map(function (name) {
+      return '<button type="button" class="chip" data-task="' + name + '">' + name + '</button>';
+    }).join('');
+  }
+
+  function getSelectedTasks() {
+    var picked = [];
+    var chips = document.querySelectorAll('#taskPicker .chip.on');
+    for (var i = 0; i < chips.length; i++) {
+      picked.push(chips[i].dataset.task);
+    }
+    return picked.join(' + ');
+  }
+
+  // 先探一下这个环境能不能存
+  try {
+    localStorage.setItem('__probe__', '1');
+    localStorage.removeItem('__probe__');
+  } catch (err) {
+    document.getElementById('warn').classList.add('show');
+    console.warn('本地存储不可用', err);
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (err) {
+      console.warn('读取本地数据失败，改用默认数据', err);
+    }
+    return DEFAULT_RECORDS.slice();
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    } catch (err) {
+      document.getElementById('warn').classList.add('show');
+      console.warn('保存失败', err);
+    }
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function render() {
+    if (records.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">还没有记录，在上面添加一条</td></tr>';
+    } else {
+      tbody.innerHTML = records.map(function (r) {
+        return '<tr>' +
+          '<td>' + esc(r.name) + '</td>' +
+          '<td>' + esc(r.sect) + '</td>' +
+          '<td>' + esc(r.task) + '</td>' +
+          '<td class="num">' + r.income + '</td>' +
+          '<td class="num">' + r.minutes + '</td>' +
+          '<td class="num"><button class="del" data-id="' + r.id + '" title="删除">&times;</button></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    var totalIncome = records.reduce(function (sum, r) { return sum + Number(r.income); }, 0);
+    var totalMinutes = records.reduce(function (sum, r) { return sum + Number(r.minutes); }, 0);
+    var hours = totalMinutes / 60;
+    var perHour = hours > 0 ? totalIncome / hours : 0;
+
+    document.getElementById('sumIncome').innerHTML = totalIncome.toFixed(1) + '<span>万梦幻币</span>';
+    document.getElementById('sumHours').innerHTML = hours.toFixed(2) + '<span>小时</span>';
+    document.getElementById('perHour').innerHTML = perHour.toFixed(1) + '<span>万 / 小时</span>';
+  }
+
+  function addRecord() {
+    var data = new FormData(form);
+    var name = String(data.get('name') || '').trim();
+    var sect = String(data.get('sect') || '').trim();
+    var task = getSelectedTasks();
+    var income = Number(data.get('income'));
+    var minutes = Number(data.get('minutes'));
+
+    if (!name || !sect || !task || !(income >= 0) || !(minutes >= 0)) return;
+
+    records.push({
+      id: Date.now().toString(36),
+      name: name,
+      sect: sect,
+      task: task,
+      income: income,
+      minutes: minutes
+    });
+
+    save();
+    render();
+    form.reset();
+
+    var on = document.querySelectorAll('#taskPicker .chip.on');
+    for (var i = 0; i < on.length; i++) on[i].classList.remove('on');
+
+    var first = form.querySelector('input[name="name"]');
+    if (first) first.focus();
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    addRecord();
+  });
+
+  document.getElementById('addBtn').addEventListener('click', function (e) {
+    e.preventDefault();
+    addRecord();
+  });
+
+  document.getElementById('taskPicker').addEventListener('click', function (e) {
+    var chip = e.target.closest('.chip');
+    if (!chip) return;
+    chip.classList.toggle('on');
+  });
+
+  tbody.addEventListener('click', function (e) {
+    var btn = e.target.closest('.del');
+    if (!btn) return;
+
+    records = records.filter(function (r) { return r.id !== btn.dataset.id; });
+    save();
+    render();
+  });
+
+  buildSects();
+  buildTasks();
+
+  document.getElementById('today').textContent =
+    new Date().toLocaleDateString('zh-CN', {
+      year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
+    });
+
+  render();
+</script>
 </body>
 </html>
