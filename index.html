@@ -21,7 +21,7 @@
 
   .entry {
     display: grid;
-    grid-template-columns: 1.3fr 1fr 0.8fr 0.8fr auto;
+    grid-template-columns: 1.2fr 1fr 0.8fr 0.8fr 0.8fr auto;
     gap: 8px;
     margin-top: 24px;
   }
@@ -94,7 +94,7 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: 0;
     background: #fff;
     border: 1px solid #E5E2DC;
     border-radius: 12px;
@@ -143,6 +143,35 @@
   .stat.highlight .label { color: #0F6E56; }
   .stat.highlight .value { color: #085041; }
   .stat.highlight .value span { color: #0F6E56; }
+  .stat .sub { font-size: 12px; color: #918E87; margin-top: 4px; }
+  .value.neg { color: #A32D2D; }
+  .num.neg { color: #A32D2D; }
+
+  .rate {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: #5F5E5A;
+  }
+  .rate input {
+    width: 72px;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 13px;
+    text-align: right;
+    color: #2C2C2A;
+    background: #fff;
+    border: 1px solid #E5E2DC;
+    border-radius: 8px;
+    outline: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .rate input:focus { border-color: #185FA5; }
+  .rate .hint { font-size: 12px; color: #B4B2A9; }
+
+  .table-wrap { margin-top: 20px; }
 
   .note { margin-top: 24px; font-size: 12px; color: #918E87; line-height: 1.7; }
 
@@ -162,7 +191,8 @@
     body { padding: 32px 16px; }
     .entry { grid-template-columns: 1fr 1fr; }
     .entry button { grid-column: span 2; }
-    table { font-size: 12.5px; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 580px; }
     th, td { padding: 9px 10px; }
   }
 </style>
@@ -180,55 +210,74 @@
     <input name="name" type="text" placeholder="角色名" required maxlength="12" autocomplete="off">
     <select name="sect" id="sect" required></select>
     <input name="income" type="number" placeholder="收入(万)" step="0.1" min="0" required>
+    <input name="expense" type="number" placeholder="支出(万)" step="0.1" min="0">
     <input name="minutes" type="number" placeholder="耗时(分)" step="1" min="0" required>
     <button type="submit" id="addBtn">添加</button>
     <div class="task-picker" id="taskPicker"></div>
   </form>
 
-  <table>
-    <thead>
-      <tr>
-        <th>角色</th>
-        <th>门派</th>
-        <th>今日任务</th>
-        <th class="num">收入(万)</th>
-        <th class="num">耗时(分)</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>角色</th>
+          <th>门派</th>
+          <th>今日任务</th>
+          <th class="num">收入(万)</th>
+          <th class="num">支出(万)</th>
+          <th class="num">净(万)</th>
+          <th class="num">耗时(分)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="rate">
+    <label for="rate">点卡折算</label>
+    <input id="rate" type="number" step="0.1" min="0" value="0">
+    <span>万 / 小时</span>
+    <span class="hint">填你们区的点卡价，不填就是 0</span>
+  </div>
 
   <div class="summary">
     <div class="stat">
-      <div class="label">今日总收入</div>
-      <div class="value" id="sumIncome">0<span>万梦幻币</span></div>
+      <div class="label">总收入</div>
+      <div class="value" id="sumIncome">0<span>万</span></div>
     </div>
     <div class="stat">
-      <div class="label">总耗时</div>
-      <div class="value" id="sumHours">0<span>小时</span></div>
+      <div class="label">总支出</div>
+      <div class="value" id="sumExpense">0<span>万</span></div>
+      <div class="sub" id="sumCard">含点卡 0 万</div>
+    </div>
+    <div class="stat">
+      <div class="label">净收益</div>
+      <div class="value" id="sumNet">0<span>万</span></div>
+      <div class="sub" id="sumHours">共 0 小时</div>
     </div>
     <div class="stat highlight">
-      <div class="label">每小时收益</div>
+      <div class="label">净时薪</div>
       <div class="value" id="perHour">0<span>万 / 小时</span></div>
     </div>
   </div>
 
   <p class="note">
-    数据存在你这台电脑的浏览器里，换电脑或清除浏览器数据就会丢。<br>
-    v0.3 会把它搬到服务器上。
+    支出 = 你手填的消耗品 + 耗时折算的点卡。净收益 = 收入 − 支出。<br>
+    数据存在这台电脑的浏览器里，换电脑或清浏览器数据就会丢。
   </p>
 </div>
 
 <script>
   var STORAGE_KEY = 'dream-ledger-records';
+  var RATE_KEY = 'dream-ledger-rate';
 
   var DEFAULT_RECORDS = [
-    { id: 'a1', name: '剑走偏锋',   sect: '大唐官府', task: '师门 + 捉鬼', income: 28, minutes: 150 },
-    { id: 'a2', name: '一念花开',   sect: '化生寺',   task: '师门 + 宝图', income: 22, minutes: 120 },
-    { id: 'a3', name: '清风不识字', sect: '方寸山',   task: '师门',        income: 12, minutes: 60  },
-    { id: 'a4', name: '海阔天空',   sect: '龙宫',     task: '捉鬼',        income: 18, minutes: 90  },
-    { id: 'a5', name: '魔王在此',   sect: '魔王寨',   task: '师门',        income: 8,  minutes: 45  }
+    { id: 'a1', name: '剑走偏锋',   sect: '大唐官府', task: '师门 + 捉鬼', income: 28, expense: 3,   minutes: 150 },
+    { id: 'a2', name: '一念花开',   sect: '化生寺',   task: '师门 + 宝图', income: 22, expense: 2,   minutes: 120 },
+    { id: 'a3', name: '清风不识字', sect: '方寸山',   task: '师门',        income: 12, expense: 1,   minutes: 60  },
+    { id: 'a4', name: '海阔天空',   sect: '龙宫',     task: '捉鬼',        income: 18, expense: 2.5, minutes: 90  },
+    { id: 'a5', name: '魔王在此',   sect: '魔王寨',   task: '师门',        income: 8,  expense: 0.5, minutes: 45  }
   ];
 
   var SECTS = {
@@ -283,14 +332,29 @@
     console.warn('本地存储不可用', err);
   }
 
+  function normalize(r) {
+    return {
+      id: r.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+      name: r.name || '',
+      sect: r.sect || '',
+      task: r.task || '',
+      income: Number(r.income) || 0,
+      expense: Number(r.expense) || 0,
+      minutes: Number(r.minutes) || 0
+    };
+  }
+
   function load() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        var list = JSON.parse(raw);
+        if (list && list.length) return list.map(normalize);
+      }
     } catch (err) {
       console.warn('读取本地数据失败，改用默认数据', err);
     }
-    return DEFAULT_RECORDS.slice();
+    return DEFAULT_RECORDS.map(normalize);
   }
 
   function save() {
@@ -302,6 +366,30 @@
     }
   }
 
+  function getRate() {
+    var v = Number(document.getElementById('rate').value);
+    return v > 0 ? v : 0;
+  }
+
+  function loadRate() {
+    try {
+      var raw = localStorage.getItem(RATE_KEY);
+      if (raw !== null && Number(raw) > 0) {
+        document.getElementById('rate').value = Number(raw);
+      }
+    } catch (err) {
+      console.warn('读取点卡设置失败', err);
+    }
+  }
+
+  function saveRate() {
+    try {
+      localStorage.setItem(RATE_KEY, String(getRate()));
+    } catch (err) {
+      console.warn('保存点卡设置失败', err);
+    }
+  }
+
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -309,15 +397,24 @@
   }
 
   function render() {
+    var rate = getRate();
+
     if (records.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty">还没有记录，在上面添加一条</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="empty">还没有记录，在上面添加一条</td></tr>';
     } else {
       tbody.innerHTML = records.map(function (r) {
+        var card = Number(r.minutes) / 60 * rate;
+        var cost = Number(r.expense) + card;
+        var net = Number(r.income) - cost;
+
         return '<tr>' +
           '<td>' + esc(r.name) + '</td>' +
           '<td>' + esc(r.sect) + '</td>' +
           '<td>' + esc(r.task) + '</td>' +
-          '<td class="num">' + r.income + '</td>' +
+          '<td class="num">' + Number(r.income).toFixed(1) + '</td>' +
+          '<td class="num" title="消耗品 ' + Number(r.expense).toFixed(1) + ' + 点卡 ' + card.toFixed(1) + '">' +
+            cost.toFixed(1) + '</td>' +
+          '<td class="num' + (net < 0 ? ' neg' : '') + '">' + net.toFixed(1) + '</td>' +
           '<td class="num">' + r.minutes + '</td>' +
           '<td class="num"><button class="del" data-id="' + r.id + '" title="删除">&times;</button></td>' +
         '</tr>';
@@ -325,12 +422,26 @@
     }
 
     var totalIncome = records.reduce(function (sum, r) { return sum + Number(r.income); }, 0);
+    var totalExpense = records.reduce(function (sum, r) { return sum + Number(r.expense); }, 0);
     var totalMinutes = records.reduce(function (sum, r) { return sum + Number(r.minutes); }, 0);
     var hours = totalMinutes / 60;
-    var perHour = hours > 0 ? totalIncome / hours : 0;
+    var totalCard = hours * rate;
+    var net = totalIncome - totalExpense - totalCard;
+    var perHour = hours > 0 ? net / hours : 0;
 
-    document.getElementById('sumIncome').innerHTML = totalIncome.toFixed(1) + '<span>万梦幻币</span>';
-    document.getElementById('sumHours').innerHTML = hours.toFixed(2) + '<span>小时</span>';
+    document.getElementById('sumIncome').innerHTML = totalIncome.toFixed(1) + '<span>万</span>';
+
+    document.getElementById('sumExpense').innerHTML =
+      (totalExpense + totalCard).toFixed(1) + '<span>万</span>';
+    document.getElementById('sumCard').textContent =
+      '含点卡 ' + totalCard.toFixed(1) + ' 万';
+
+    var netEl = document.getElementById('sumNet');
+    netEl.innerHTML = net.toFixed(1) + '<span>万</span>';
+    if (net < 0) netEl.classList.add('neg');
+    else netEl.classList.remove('neg');
+    document.getElementById('sumHours').textContent = '共 ' + hours.toFixed(2) + ' 小时';
+
     document.getElementById('perHour').innerHTML = perHour.toFixed(1) + '<span>万 / 小时</span>';
   }
 
@@ -340,8 +451,10 @@
     var sect = String(data.get('sect') || '').trim();
     var task = getSelectedTasks();
     var income = Number(data.get('income'));
+    var expense = Number(data.get('expense'));
     var minutes = Number(data.get('minutes'));
 
+    if (!(expense >= 0)) expense = 0;
     if (!name || !sect || !task || !(income >= 0) || !(minutes >= 0)) return;
 
     records.push({
@@ -350,6 +463,7 @@
       sect: sect,
       task: task,
       income: income,
+      expense: expense,
       minutes: minutes
     });
 
@@ -389,8 +503,14 @@
     render();
   });
 
+  document.getElementById('rate').addEventListener('input', function () {
+    saveRate();
+    render();
+  });
+
   buildSects();
   buildTasks();
+  loadRate();
 
   document.getElementById('today').textContent =
     new Date().toLocaleDateString('zh-CN', {
